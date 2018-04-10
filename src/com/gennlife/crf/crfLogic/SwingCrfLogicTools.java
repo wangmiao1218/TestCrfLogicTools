@@ -63,7 +63,8 @@ public class SwingCrfLogicTools extends JFrame implements ActionListener {
     //JButton start_button2 = new JButton("配置联动路径");
 
     public void show(){
-        mainframe = new JFrame("TestCrfLogicTools-1.0");
+    	//第三版
+        mainframe = new JFrame("TestCrfLogicTools-1.3");
         // Setting the width and height of frame
         mainframe.setSize(575, 480);
         mainframe.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -212,7 +213,9 @@ public class SwingCrfLogicTools extends JFrame implements ActionListener {
                 
                 try {
                 	//调用方法_插入patientDetail
-                	CrfLogic.insertDatasIntoPatientDetailAndPostAndWritePatIntoExcel(excel, path_Json,infilepath_Mongo, infilepath_Auto, infilepath_Disease);
+                	//CrfLogic.insertDatasIntoPatientDetailAndPostAndWritePatIntoExcel(excel, path_Json,infilepath_Mongo, infilepath_Auto, infilepath_Disease);
+                	//使用心得逻辑
+                	CrfLogic.addFirstPat_insertDatasIntoPatientDetailAndPostAndWritePatIntoExcel(excel, path_Json,infilepath_Mongo, infilepath_Auto, infilepath_Disease);
                 	
                 	//调用方法_查询crfdata
                 	CrfLogic.queryCrfdataByPatAndWriteResults(excel,infilepath_Mongo);
