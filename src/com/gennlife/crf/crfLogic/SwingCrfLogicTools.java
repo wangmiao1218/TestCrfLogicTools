@@ -32,6 +32,7 @@ import com.gennlife.crf.utils.ListAndStringUtils;
 public class SwingCrfLogicTools extends JFrame implements ActionListener {
 	private static final long serialVersionUID = 1L;
 	
+	
 	JFrame mainframe;
     JPanel panel;
     //创建相关的Label标签
