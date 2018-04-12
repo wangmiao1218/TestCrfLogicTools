@@ -82,20 +82,27 @@ public class CrfLogic {
 					
 				}else if (firstPatContent==null || "".equals(firstPatContent)) {
 					//===================firtPat为空的情况，仍是原有逻辑================================
-					//只有满足以下才进行计算：组装数据(不复用pat，且数据源与输入文本不为空)
-					if ((reusePatContent==null ||"".equals(reusePatContent)) && patientDetailContent!=null && insertContent!=null) {
+					//只有满足以下才进行计算：组装数据(不复用pat，且数据源与输入文本不为空)(且reusePatContent为空，且其他两个不为空)
+					if ((reusePatContent==null || "".equals(reusePatContent) || " ".equals(reusePatContent)) && 
+							(patientDetailContent!=null && !"".equals(patientDetailContent)&& !" ".equals(patientDetailContent)) 
+							&& (insertContent!=null && !"".equals(patientDetailContent) && !" ".equals(patientDetailContent))){
 						//pat编号
 						String patContent="pat_"+UUID.randomUUID().toString().split("-")[0]+"_"+(isConfiguredRowNum+1);
 						//存行号和pat
 						cellNumAndPatMap.put(isConfiguredRowNum, patContent);
 						JSONObject newJSONObject = null;
 						//============单个数据源处理============（目前是update方式，后续改成增加方式.....................）
-						if (!patientDetailContent.contains(";")) {
+						//=============
+						//20180412对数据源进行处理：开头末尾去掉空格、换行符，结尾的分号
+						patientDetailContent=ListAndStringUtils.replaceBlankAndLastSemicolon(patientDetailContent);
+						insertContent=ListAndStringUtils.replaceBlankAndLastSemicolon(insertContent);
+						//============
+						if (!patientDetailContent.contains(";")){
 							//对数据源patientDetail进行处理
 							String[] dealWithpatientDetailByDotToStrings = ListAndStringUtils.dealWithpatientDetailByDotToStrings(patientDetailContent);
 							//解析json，将pat、和输入文本插入到json中
 							newJSONObject = JsonUtils.updatePatAndValueReturnNewJSONObject(baseJson, patPath, patContent, dealWithpatientDetailByDotToStrings, insertContent);
-						}else if (patientDetailContent.contains(";") && insertContent.contains(";")) {
+						}else if (patientDetailContent.contains(";") && insertContent.contains(";") ) {
 							//============多个数据源处理============	
 							//处理patientDetail，然后用英文；分割
 							String byAsteriskToString = ListAndStringUtils.dealWithpatientDetailByAsteriskToString(patientDetailContent);
@@ -612,6 +619,136 @@ public class CrfLogic {
 			ExcelUtils.writeAndSaveContent(excel, pat, rowNum, patCellNum);
 		}
 		System.out.println("pat写入excel完成...");
+	}
+	
+	
+	/** 
+	 * @Title: readExcelReturnJsonMapList (测试用)
+	 * @Description: 读excel相关配置，根据组装规则，返回json的list，方便后续插入数据库
+	 * @param: @param excel
+	 * @param: @param path
+	 * @return: List<Map<String, JSONObject>>
+	 * @throws 
+	 */
+	public static List<Map<String,JSONObject>> readExcelReturnJsonMapList(Excel excel,String path) throws JSONException {
+		//存放批量的json，统一插入到mongodb
+		List<Map<String, JSONObject>> returnListMapJsons = new ArrayList<Map<String,JSONObject>>();
+		Integer isConfiguredCellNum = ExcelUtils.searchKeyWordOfOneLine(excel, 0, "是否配置");
+		Integer reusePatNum = ExcelUtils.searchKeyWordOfOneLine(excel, 0, "reusePatRowNum");
+		Integer patientDetailCellNum = ExcelUtils.searchKeyWordOfOneLine(excel, 0, "patientDetail");
+		Integer insertContentCellNum = ExcelUtils.searchKeyWordOfOneLine(excel, 0, "输入文本");
+		
+		//获取isConfiguredCellNum一列（用readExcelOfListReturnListMap，因为有重复值）(除表头)
+		List<Map<Integer,String>> list = ExcelUtils.readExcelOfListReturnListMap(excel, isConfiguredCellNum);
+		//获取是否配置的列，开始遍历
+		for (int i = 1; i < list.size(); i++) {
+			//放到上面设置变量，则不循环，但是每个值都保存了
+			//读取基础文本文件，并转为json
+			org.json.JSONObject baseJson = JsonUtils.readFileContentReturnJson(path);
+			
+			Map<Integer, String> map = list.get(i);
+			//定义是否填的行号和内容
+			Integer isConfiguredRowNum=null;
+			String isConfiguredStr=null;
+			for (Map.Entry<Integer, String> entry: map.entrySet()) {  
+				isConfiguredRowNum=entry.getKey();
+				isConfiguredStr=entry.getValue();
+			}
+			
+			if ("是".equals(isConfiguredStr)) {
+				//获取并行的三列，进行判断
+				String reusePatContent = ExcelUtils.readContent(excel, isConfiguredRowNum, reusePatNum);
+				String patientDetailContent = ExcelUtils.readContent(excel, isConfiguredRowNum, patientDetailCellNum);
+				String insertContent = ExcelUtils.readContent(excel, isConfiguredRowNum, insertContentCellNum);
+				
+				//只有满足以下才进行计算(不服用pat，且数据源与输入文本不为空)
+				if (reusePatContent==null && patientDetailContent!=null && insertContent!=null) {
+					//pat编号
+					String patContent="pat_"+(isConfiguredRowNum+1);
+					JSONObject newJSONObject = null;
+					//============单个数据源处理============（目前是update方式，后续改成增加方式）
+					if (!patientDetailContent.contains(";")) {
+						//对数据源patientDetail进行处理
+						String[] dealWithpatientDetailByDotToStrings = ListAndStringUtils.dealWithpatientDetailByDotToStrings(patientDetailContent);
+						//解析json，将pat、和输入文本插入到json中
+						newJSONObject = JsonUtils.updatePatAndValueReturnNewJSONObject(baseJson, patPath, patContent, dealWithpatientDetailByDotToStrings, insertContent);
+					}else if (patientDetailContent.contains(";") && insertContent.contains(";")) {
+						//============多个数据源处理============	
+						//处理patientDetail，然后用；分割
+						String byAsteriskToString = ListAndStringUtils.dealWithpatientDetailByAsteriskToString(patientDetailContent);
+						List<String> patientDetailContents = ListAndStringUtils.dealWithpatientDetailBySemicolonToStrings(byAsteriskToString);
+						//处理insertContent，然后用;分割
+						List<String> insertContents = ListAndStringUtils.dealWithpatientDetailBySemicolonToStrings(insertContent);
+						//循环处理json放入一个人的数据里
+						for (int j = 0; j < patientDetailContents.size(); j++) {
+							//=======================
+							//后续会加是否重复的判断
+							
+							
+							//=======================
+							String[] dbyDotToStrings = ListAndStringUtils.dealWithpatientDetailByDotToStrings(patientDetailContents.get(j));
+							newJSONObject = JsonUtils.updatePatAndValueReturnNewJSONObject(baseJson, patPath, patContent, dbyDotToStrings, insertContents.get(j));
+						}
+					} 
+					//添加到listJsons（map只有一个值，方便后面遍历）
+					Map<String,JSONObject> patAndJsonMap =new  HashedMap<String, JSONObject>();
+					patAndJsonMap.put(patContent, newJSONObject);
+					returnListMapJsons.add(patAndJsonMap);
+				}
+			}else {
+				//System.out.println("非配置字段！");
+			}
+		}
+		return returnListMapJsons;
+	}
+	
+	
+	/** 
+	* @Title: readExcelReturnCellNumAndPatMap (测试用)
+	* @Description: 读excel相关配置，返回行号和pat的
+	* @param: @param excel
+	* @param: @return
+	* @param: @throws JSONException
+	* @return: Map<Integer,String>
+	* @throws 
+	*/
+	public static Map<Integer, String> readExcelReturnCellNumAndPatMap(Excel excel) throws JSONException {
+		//将行号和pat号对应，存到map里，方便后续写入，和批量请求
+		Map<Integer, String> returnCellNumAndPatMap = new HashedMap<Integer, String>();
+		
+		Integer isConfiguredCellNum = ExcelUtils.searchKeyWordOfOneLine(excel, 0, "是否配置");
+		Integer reusePatNum = ExcelUtils.searchKeyWordOfOneLine(excel, 0, "reusePatRowNum");
+		Integer patientDetailCellNum = ExcelUtils.searchKeyWordOfOneLine(excel, 0, "patientDetail");
+		Integer insertContentCellNum = ExcelUtils.searchKeyWordOfOneLine(excel, 0, "输入文本");
+	
+		//获取isConfiguredCellNum一列（用readExcelOfListReturnListMap，因为有重复值）(除表头)
+		List<Map<Integer,String>> list = ExcelUtils.readExcelOfListReturnListMap(excel, isConfiguredCellNum);
+		//获取是否配置的列，开始遍历
+		for (int i = 1; i < list.size(); i++) {
+			Map<Integer, String> map = list.get(i);
+			//定义是否填的行号和内容
+			Integer isConfiguredRowNum=null;
+			String isConfiguredStr=null;
+			for (Map.Entry<Integer, String> entry: map.entrySet()) {  
+				isConfiguredRowNum=entry.getKey();
+				isConfiguredStr=entry.getValue();
+			}
+			
+			if ("是".equals(isConfiguredStr)) {
+				//获取并行的三列，进行判断
+				String reusePatContent = ExcelUtils.readContent(excel, isConfiguredRowNum, reusePatNum);
+				String patientDetailContent = ExcelUtils.readContent(excel, isConfiguredRowNum, patientDetailCellNum);
+				String insertContent = ExcelUtils.readContent(excel, isConfiguredRowNum, insertContentCellNum);
+				
+				//只有满足以下才进行计算(不服用pat，且数据源与输入文本不为空)
+				if (reusePatContent==null && patientDetailContent!=null && insertContent!=null) {
+					String patContent="pat_"+(isConfiguredRowNum+1);
+					//存行号和pat
+					returnCellNumAndPatMap.put(isConfiguredRowNum, patContent);
+				}
+			}
+		}
+		return returnCellNumAndPatMap;
 	}
 	
 	

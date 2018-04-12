@@ -7,11 +7,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import net.sf.json.JSONArray;
 
 import org.apache.commons.collections4.map.HashedMap;
-
 
 
 /**
@@ -21,6 +22,53 @@ import org.apache.commons.collections4.map.HashedMap;
  */
 public class ListAndStringUtils {
 
+	
+	/** 
+	* @Title: countChar 字符串中判断含有单个字符串的个数
+	* @Description: 
+	* @param: @param str
+	* @param: @param ch 用单引号''
+	* @param: @return :
+	* @return: int
+	* @throws 
+	*/
+	public static int countChar(String str,char ch) {
+	    // 将字符串转换为字符数组
+	    char[] chs = str.toCharArray();
+	    // 定义变量count存储字符串出现次数
+	    int count = 0;
+	    for(int i = 0;i < chs.length;i++) {
+	        if(chs[i] == ch) {
+	        count++;
+	        }
+	    }
+	    return count;
+	}
+	
+	/** 
+	* @Title: replaceBlankAndLastSemicolon 
+	* @Description: 去掉字符串的空格、回车、换行符、制表符，并且去掉结尾的分号
+	* @param: @param str
+	* @param: @return :
+	* @return: String
+	* @throws 
+	*/
+	public static String replaceBlankAndLastSemicolon(String str) {
+		if (str!=null) {
+			Pattern p = Pattern.compile("\\s*|\t|\r|\n");
+			Matcher m = p.matcher(str);
+			str = m.replaceAll("");
+		}
+		//然后徐去掉末尾的分号
+		if (str.contains(";")) {
+			String lastStr = str.substring(str.length()-1,str.length());
+			if (";".equals(lastStr)) {
+				str=str.substring(0,str.length()-1); 
+			}
+		}
+		return str;
+	}
+	
 	
 	/** 
 	 * @Title: dealWithpatientDetailByAsteriskToString 
@@ -166,15 +214,39 @@ public class ListAndStringUtils {
 		return 	jsonArray;
 	}
 	
-
+	
 	/** 
-	* @Title: dealPatListAddDoubleQuotationMarksReturnPatStrs 
-	* @Description: 处理从excel读取的patlist,将每个元素加双引号及每个末尾加逗号，返回一个处理后的String
-	* @param: @param patList
-	* @param: @return :
-	* @return: String
-	* @throws 
-	*/
+	 * @Title: dealOldPatListAddDoubleQuotationMarksReturnOldPatStrs 
+	 * @Description: 处理从excel读取的oldPatlist,返回一个处理后的String
+	 * @param: @param patList
+	 * @param: @return :
+	 * @return: String
+	 * @throws 
+	 */
+	public static String dealOldPatListAddDoubleQuotationMarksReturnOldPatStrs(List<String> oldPatList) {
+		if (oldPatList.size()>0) {
+			StringBuilder sb = new StringBuilder();
+			for (int i = 0; i < oldPatList.size(); i++) {
+				String str ="{\"PatientID\":\""+oldPatList.get(i)+"\",\"VisitType\":\"1\"}";
+				sb.append(str.trim()).append(",");
+			}
+			sb.deleteCharAt(sb.length() - 1);
+			return sb.toString();
+		}else{
+			return null;
+		}
+		
+	}
+	
+	
+	/** 
+	 * @Title: dealPatListAddDoubleQuotationMarksReturnPatStrs 
+	 * @Description: 处理从excel读取的patlist,将每个元素加双引号及每个末尾加逗号，返回一个处理后的String
+	 * @param: @param patList
+	 * @param: @return :
+	 * @return: String
+	 * @throws 
+	 */
 	public static String dealPatListAddDoubleQuotationMarksReturnPatStrs(List<String> patList) {
 		if (patList.size()>0) {
 			StringBuilder sb = new StringBuilder();
@@ -239,92 +311,7 @@ public class ListAndStringUtils {
     }  
 	
 	
-	/** 
-	* @Title: isLinkageFieldGroupLinkage 
-	* @Description: 判断联动的组是否为组联动，是返回true，否返回false
-	* @param: @param crfList
-	* @param: @return :
-	* @return: Boolean
-	* @throws 
-	*/
-    /*
-	public static Boolean isCRFListLGroupLinkage(List<CrfTemplateAnzhenXinXueguan> crfList) {
-		Boolean status = false;
-		for (int i = 0; i < crfList.size(); i++) {
-			//组联动(组名称非空且联动非空)
-			if ((crfList.get(i).getThirdGroup()!=null 
-						&& crfList.get(i).getDisplayMainKey()!=null 
-						&& !"".equals(crfList.get(i).getThirdGroup().trim()) 
-						&& !"".equals(crfList.get(i).getDisplayMainKey().trim())) 
-					|| (crfList.get(i).getSecondGroup()!=null 
-					&& crfList.get(i).getDisplayMainKey()!=null 
-					&& !"".equals(crfList.get(i).getSecondGroup().trim()) 
-					&& !"".equals(crfList.get(i).getDisplayMainKey().trim())) ) {
-				
-				status = true;
-				break;
-			}
-		}	
-		return status;
-	}
-	*/
 	
-	/** 
-	 * @Title: searchCrfListReturnAllLinkageFieldsList 
-	 * @Description: 以第一个firstCrf开始，判断其是否联动，若联动则在crfList中找到对应的联动字段（逆序输出），不存在直接返回本身
-	 * @param: @param list
-	 * @param: @param firstCrf ：一般以list中的get（0）开始查找
-	 * @param: @param returnlist
-	 * @param: @return :若联动则在crfList中找到对应的联动字段（逆序输出），不存在直接返回本身
-	 * @return: List<CrfTemplateAnzhenXinXueguan>
-	 * @throws 例如:
-	CrfTemplateAnzhenXinXueguan [id=7, baseName=个人病史, secondGroup=null, thirdGroup=, chineseName=其他（不取药原因注明）, englishName=OTHER_NON_DRUG_REASONS, idXpath=u-crf-HYPERTENSION_OTHER_NON_DRUG_REASONS, displayMainKey=schema.patient_info.PERSONAL_ILLNESS_HISTORY.HYPERTENSION.REASONS_FOR_NOT_TAKING_MEDICINE, displayMainValue=其他, dataType=string, variableType=字符串, rangeData=, inputValue=null, selectOutputValue=null, selectResult=null, linkageResult=大于三层，请人工测试]
-	CrfTemplateAnzhenXinXueguan [id=6, baseName=个人病史, secondGroup=null, thirdGroup=, chineseName=不取药原因, englishName=REASONS_FOR_NOT_TAKING_MEDICINE, idXpath=.//*[@id='u-crf-HYPERTENSION']/div[3]/div[6]/div/div/button, displayMainKey=schema.patient_info.PERSONAL_ILLNESS_HISTORY.HYPERTENSION.PRESCRIBE_MEDICINE_REGULARLY, displayMainValue=否, dataType=string, variableType=多选, rangeData=药费贵;挂号难;距离远;行动不便;没时间;自己认为不用服药;其他, inputValue=null, selectOutputValue=null, selectResult=null, linkageResult=no]
-	CrfTemplateAnzhenXinXueguan [id=5, baseName=个人病史, secondGroup=null, thirdGroup=, chineseName=是否定期开药/买药, englishName=PRESCRIBE_MEDICINE_REGULARLY, idXpath=u-crf-HYPERTENSION_PRESCRIBE_MEDICINE_REGULARLY, displayMainKey=schema.patient_info.PERSONAL_ILLNESS_HISTORY.HYPERTENSION.HAS_HYPERTENSION, displayMainValue=有, dataType=string, variableType=枚举型, rangeData=是;否, inputValue=null, selectOutputValue=null, selectResult=null, linkageResult=pass]
-	CrfTemplateAnzhenXinXueguan [id=1, baseName=个人病史, secondGroup=null, thirdGroup=, chineseName=有无高血压病, englishName=HAS_HYPERTENSION, idXpath=u-crf-HYPERTENSION_HAS_HYPERTENSION, displayMainKey=, displayMainValue=, dataType=string, variableType=枚举型, rangeData=有;无, inputValue=null, selectOutputValue=null, selectResult=null, linkageResult=]
-	 */
-    /*
-	public static List<CrfTemplateAnzhenXinXueguan> searchCrfListReturnAllLinkageFieldsList(List<CrfTemplateAnzhenXinXueguan> crfList,
-			CrfTemplateAnzhenXinXueguan firstCrf,List<CrfTemplateAnzhenXinXueguan> returnlist) {
-		if (firstCrf.getDisplayMainKey() != null && !"".equals(firstCrf.getDisplayMainKey())
-				&& !" ".equals(firstCrf.getDisplayMainKey())) {
-			returnlist.add(firstCrf);
-			
-			//获取对应的联动字段名称
-			String linkageEnglishName1 = ListAndStringUtils.displayMainKeyToEnglishName(firstCrf.getDisplayMainKey());
-			//在list中查英文名称为linkageEnglishName的CrfTemplateAnzhenXinXueguan
-			CrfTemplateAnzhenXinXueguan secondCrf = ListAndStringUtils.searchCrfListReturnOneCrf(crfList,linkageEnglishName1);
-			//递归查询
-			searchCrfListReturnAllLinkageFieldsList(crfList,secondCrf,returnlist);
-		}else {
-			returnlist.add(firstCrf);
-		}
-		return returnlist;
-	}
-	
-	*/
-	/** 
-	 * @Title: searchCrfListReturnOneCrf 
-	 * @Description: 再list中搜索符合条件的对象
-	 * @param: @param crfList
-	 * @param: @param linkageEnglishName
-	 * @param: @return :
-	 * @return: CrfTemplateAnzhenXinXueguan
-	 * @throws 
-	 */
-   /* 
-	public static CrfTemplateAnzhenXinXueguan searchCrfListReturnOneCrf(
-			List<CrfTemplateAnzhenXinXueguan> crfList,String linkageEnglishName) {
-		CrfTemplateAnzhenXinXueguan crfTemplateAnzhenXinXueguan = new CrfTemplateAnzhenXinXueguan();
-		for (int i = 0; i < crfList.size(); i++) {
-			if (linkageEnglishName.equals(crfList.get(i).getEnglishName())) {
-				crfTemplateAnzhenXinXueguan = crfList.get(i);
-				break;
-			}
-		}
-		return crfTemplateAnzhenXinXueguan;
-	}
-	*/
 	
 	/**
 	 * @Title: rangeDataReturnNeededRangeData
@@ -550,57 +537,6 @@ public class ListAndStringUtils {
 		return returnList;
 	}
 
-	/**
-	 * @Title: listWebElementToSelectString
-	 * @Description: 将List<WebElement> 转换成string，并用“；”分割
-	 * @param: List<WebElement> list 下拉框内容
-	 * @return: String
-	 * @throws
-	 */
-	/*
-	public static String listWebElementToSelectString(List<WebElement> list) {
-		StringBuilder sb = new StringBuilder();
-		
-		if (list.get(0)==null || "".equals(list.get(0)) || " ".equals(list.get(0))) {
-			// 添加"；"
-			for (int i = 1; i < list.size(); i++) {//一般下拉框第一个为空，所以从1开始
-				String attribute = list.get(i).getAttribute("value");
-				sb.append(attribute + "；");
-			}
-			// 去掉最后的“；”,与excel中“取值范围”一致，方便后续校验
-			sb.deleteCharAt(sb.length() - 1);
-		}else {
-			// 添加"；"
-			for (int i = 0; i < list.size(); i++) {//一般下拉框第一个为空，所以从1开始
-				String attribute = list.get(i).getAttribute("value");
-				sb.append(attribute + "；");
-			}
-			// 去掉最后的“；”,与excel中“取值范围”一致，方便后续校验
-			sb.deleteCharAt(sb.length() - 1);
-		}
-		
-		return sb.toString();
-	}
-	*/
-	
-	/**
-	 * @Title: listWebElementToListString
-	 * @Description: 将List<WebElement> 转换成string类型的List
-	 * @param: List<WebElement> list 下拉框内容
-	 * @return: List<String>
-	 * @throws
-	 */
-	/*
-	public static List<String> listWebElementToListString(List<WebElement> list) {
-		List<String> arrayList = new ArrayList<String>();
-		// 添加"；"
-		for (int i = 0; i < list.size(); i++) {
-			String attribute = list.get(i).getText();
-			arrayList.add(attribute);
-		}
-		return arrayList;
-	}
-	*/
 	
 	/** 
 	* @Title: valueSpiltBySemicolonToStringList 
