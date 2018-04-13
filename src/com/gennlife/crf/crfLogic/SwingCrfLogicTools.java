@@ -9,6 +9,8 @@ import java.awt.event.ActionListener;
 import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
@@ -31,7 +33,6 @@ import com.gennlife.crf.utils.ListAndStringUtils;
  */
 public class SwingCrfLogicTools extends JFrame implements ActionListener {
 	private static final long serialVersionUID = 1L;
-	
 	
 	JFrame mainframe;
     JPanel panel;
@@ -64,8 +65,7 @@ public class SwingCrfLogicTools extends JFrame implements ActionListener {
     //JButton start_button2 = new JButton("配置联动路径");
 
     public void show(){
-    	//第三版
-        mainframe = new JFrame("TestCrfLogicTools-1.3");
+        mainframe = new JFrame("TestCrfLogicTools-1.0");
         // Setting the width and height of frame
         mainframe.setSize(575, 480);
         mainframe.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -195,11 +195,10 @@ public class SwingCrfLogicTools extends JFrame implements ActionListener {
             	String outFilePath = ListAndStringUtils.stringReplaceReturnValue(outfilepath);
             	String fileName_Excel = ListAndStringUtils.stringToSubstringReturnFileName(infilepath_Excel);
             	String fileName_Json = ListAndStringUtils.stringToSubstringReturnFileName(infilepath_Json);
-            	
             	 //先把文件copy到输出路径
                 try {
 					FileUtils.copyFile(ListAndStringUtils.stringReplaceReturnValue(infilepath_Excel), outFilePath+"\\\\"+fileName_Excel);
-				} catch (Exception e1) {
+                } catch (Exception e1) {
 					e1.printStackTrace();
 				}
                 try {
@@ -207,7 +206,7 @@ public class SwingCrfLogicTools extends JFrame implements ActionListener {
                 } catch (Exception e1) {
                 	e1.printStackTrace();
                 }
-               
+                
                 Excel excel = new Excel(outFilePath,fileName_Excel, "Sheet1");
                 //处理后的json文件path
                 String path_Json = outFilePath+"\\\\"+fileName_Json;
@@ -221,6 +220,14 @@ public class SwingCrfLogicTools extends JFrame implements ActionListener {
                 	//调用方法_查询crfdata
                 	CrfLogic.queryCrfdataByPatAndWriteResults(excel,infilepath_Mongo);
                 	
+                	//===========改变名称 start=========
+                	String newFileName_Excel=null;
+					File file=new File(outFilePath+"\\\\"+fileName_Excel); 
+					newFileName_Excel = ListAndStringUtils.segmentFileAllNameToFileName(fileName_Excel);
+					newFileName_Excel = newFileName_Excel+"_"+new SimpleDateFormat("yyyyMMdd-HHmmss").format(new Date());
+					file.renameTo(new File(outFilePath+"\\\\"+newFileName_Excel+".xlsx"));
+                	//===========改变名称 end=========
+					
 				} catch (Exception e1) {
 					e1.printStackTrace();
 				}
